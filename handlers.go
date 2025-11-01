@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"google.golang.org/genai"
 )
@@ -33,15 +33,40 @@ func TaskHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Get the last 20 messages
-	messages := req.Params.Message
-	if len(messages.Parts) < 2 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "missing required parts"})
+	if req.JsonRPC != "2.0" {
+		jsonError := JsonRPCError{
+			Code:    -32600,
+			Message: "Invalid Request: jsonrpc must be \"2.0\" and id is required",
+		}
+		errorResponse := A2AResponseError{
+			JsonRPC: "2.0",
+			Id:      req.Id,
+			Error:   jsonError,
+		}
+		ctx.JSON(http.StatusBadRequest, errorResponse)
 		return
 	}
 
+	// Get the last 20 messages
+	messages := req.Params.Message
+	if len(messages.Parts) < 2 {
+		jsonError := JsonRPCError{
+			Code:    -32603,
+			Message: "Invalid Request: missing required part",
+		}
+		errorResponse := A2AResponseError{
+			JsonRPC: "2.0",
+			Id:      req.Id,
+			Error:   jsonError,
+		}
+		ctx.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	// get the user's prompt
 	prompt := messages.Parts[0].Text
 
+	// convert them to gemini History
 	dataParts := messages.Parts[1].Data
 	var history []*genai.Content
 	for i, dp := range dataParts {
@@ -52,74 +77,97 @@ func TaskHandler(ctx *gin.Context) {
 		}
 	}
 
-	getGeminiResponse(prompt, history)
-}
-
-func sendDailyFacts() (*string, error) {
-	events := getHistoricalEvents()
-	result := getGeminiSummary(events)
-
-	resultKind := "text"
-	resultString := result.Text()
-
-	textPart := Part{
-		Kind: resultKind,
-		Text: resultString,
+	result, err := getGeminiResponse(prompt, history)
+	if err != nil || result == nil {
+		jsonError := JsonRPCError{
+			Code:    -32603,
+			Message: "Internal Error",
+		}
+		errorResponse := A2AResponseError{
+			JsonRPC: "2.0",
+			Id:      req.Id,
+			Error:   jsonError,
+		}
+		ctx.JSON(http.StatusBadRequest, errorResponse)
+		return
 	}
 
-	partList := []Part{textPart}
+	parts := Part{
+		Kind: "text",
+		Text: result.Text(),
+	}
 
-	data := A2AResponseSuccess{
+	partArray := []Part{parts}
+
+	response := A2AResponseSuccess{
 		JsonRPC: "2.0",
-		Id:      1,
+		Id:      req.Id,
 		Result: Message{
-			Id:    "msg --1",
+			Id:    uuid.New().String(),
 			Role:  "agent",
-			Parts: partList,
 			Kind:  "message",
+			Parts: partArray,
 		},
 	}
 
-	body, _ := json.Marshal(data)
-	url := "http://localhost:8080/api/daily-task"
+	ctx.JSON(http.StatusOK, response)
+}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+func sendDailyFacts() {
+	c := cron.New()
+
+	// Run every day at 9:00 AM
+	c.AddFunc("0 19 * * *", func() {
+		// Move ALL the logic INSIDE the cron function
+		result, err := getGeminiResponse("give me some history facts that happened today", nil)
+		if err != nil {
+			log.Printf("Error getting Gemini response: %v", err)
+			return
+		}
+
+		resultKind := "text"
+		resultString := result.Text()
+		textPart := Part{
+			Kind: resultKind,
+			Text: resultString,
+		}
+		partList := []Part{textPart}
+
+		data := A2AResponseSuccess{
+			JsonRPC: "2.0",
+			Id:      1,
+			Result: Message{
+				Id:    "msg --1",
+				Role:  "agent",
+				Parts: partList,
+				Kind:  "message",
+			},
+		}
+
+		if err := makePostRequest("https://api.example.com/daily", data); err != nil {
+			log.Printf("Cron job error: %v", err)
+		} else {
+			log.Println("Daily facts sent successfully!")
+		}
+	})
+
+	c.Start()
+	log.Println("Daily facts scheduler started (runs at 9:00 AM)")
+}
+
+func makePostRequest(url string, payload interface{}) error {
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		log.Println("❌ Error creating request:", err)
-		return nil, err
+		return err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("API_TOKEN"))
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Println("❌ Error sending request:", err)
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
-	return &resultString, nil
-}
-
-func retrieveFact() {
-	fact, err := sendDailyFacts()
-	if err != nil {
-		log.Fatalf("err: %v", err)
-	}
-
-	fmt.Print(fact)
-}
-
-func startScheduler() {
-	c := cron.New()
-	// "@daily" means once every day at midnight (00:00)
-	// You can change to "0 9 * * *" for 9 AM daily
-	_, err := c.AddFunc("0 7 * * *", retrieveFact)
-	if err != nil {
-		log.Fatal("Error scheduling job:", err)
-	}
-	c.Start()
-	fmt.Println("🕓 Daily job scheduled successfully.")
+	log.Printf("POST to %s - Status: %s", url, resp.Status)
+	return nil
 }

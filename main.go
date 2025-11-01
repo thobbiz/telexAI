@@ -1,40 +1,30 @@
 package main
 
 import (
-	"net/http"
+	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// prompt := "sup"
-	// res := getGeminiSummary(prompt, nil, nil)
-	// if len(res.Candidates) > 0 {
-	// 	fmt.Println(res.Candidates[0].Content.Parts[0].Text)
-	// }
-	startScheduler()
+	sendDailyFacts()
 
 	r := gin.Default()
 	r.Static("/.well-known", "./.well-known")
 
-	r.GET("/send-now", func(ctx *gin.Context) {
-		fact, err := sendDailyFacts()
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-		ctx.JSON(http.StatusOK, gin.H{
-			"status": "sent",
-			"fact":   fact,
-		})
-	})
-
-	// Health check route
-	r.GET("/", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"message": "Gin app running with daily job"})
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
 	})
 
 	r.Run(":8080")
+
+	result, err := getGeminiResponse("give me some history facts that happened today", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(result.Text())
 }
 
 func errorResponse(err error) gin.H {
