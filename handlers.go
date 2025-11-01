@@ -17,7 +17,7 @@ func TaskHandler(ctx *gin.Context) {
 	var req A2ARequest
 
 	//Decode the response into a taskRequest
-	if err := ctx.ShouldBindUri(&req); err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Print(errorResponse(err))
 
 		jsonError := JsonRPCError{
@@ -116,8 +116,8 @@ func TaskHandler(ctx *gin.Context) {
 func sendDailyFacts() {
 	c := cron.New()
 
-	// Run every day at 9:00 AM
-	c.AddFunc("0 19 * * *", func() {
+	// Run every day at 7:00 AM
+	c.AddFunc("0 7 * * *", func() {
 		// Move ALL the logic INSIDE the cron function
 		result, err := getGeminiResponse("give me some history facts that happened today", nil)
 		if err != nil {

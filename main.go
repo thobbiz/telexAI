@@ -1,16 +1,16 @@
 package main
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	sendDailyFacts()
+	go sendDailyFacts()
 
 	r := gin.Default()
+
+	r.POST("/history_agent", TaskHandler)
+
 	r.Static("/.well-known", "./.well-known")
 
 	r.GET("/health", func(c *gin.Context) {
@@ -18,13 +18,6 @@ func main() {
 	})
 
 	r.Run(":8080")
-
-	result, err := getGeminiResponse("give me some history facts that happened today", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(result.Text())
 }
 
 func errorResponse(err error) gin.H {
