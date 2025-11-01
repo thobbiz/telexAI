@@ -22,19 +22,19 @@ const (
 type A2ARequest struct {
 	JsonRPC string `json:"jsonrpc"`
 	Method  string `json:"method"`
-	Id      int    `json:"id"`
+	Id      string `json:"id"`
 	Params  Params `json:"params"`
 }
 
 type A2AResponseSuccess struct {
 	JsonRPC string  `json:"jsonrpc"`
-	Id      int     `json:"id"`
+	Id      string  `json:"id"`
 	Result  Message `json:"result"`
 }
 
 type A2AResponseError struct {
 	JsonRPC string       `json:"jsonrpc"`
-	Id      int          `json:"id"`
+	Id      string       `json:"id"`
 	Error   JsonRPCError `json:"error"`
 }
 

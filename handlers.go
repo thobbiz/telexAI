@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,13 +23,15 @@ func TaskHandler(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		log.Print(errorResponse(err))
 
+		idStr := fmt.Sprintf("%v", req.Id)
+
 		jsonError := JsonRPCError{
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),
 		}
 		errorResponse := A2AResponseError{
 			JsonRPC: "2.0",
-			Id:      req.Id,
+			Id:      idStr,
 			Error:   jsonError,
 		}
 		ctx.JSON(http.StatusBadRequest, errorResponse)
@@ -125,6 +130,10 @@ func sendDailyFacts() {
 			return
 		}
 
+		rand.NewSource(time.Now().UnixNano())
+		num := rand.Intn(20) + 1 //
+		strNum := strconv.Itoa(num)
+
 		resultKind := "text"
 		resultString := result.Text()
 		textPart := Part{
@@ -135,7 +144,7 @@ func sendDailyFacts() {
 
 		data := A2AResponseSuccess{
 			JsonRPC: "2.0",
-			Id:      1,
+			Id:      strNum,
 			Result: Message{
 				Id:    "msg --1",
 				Role:  "agent",
