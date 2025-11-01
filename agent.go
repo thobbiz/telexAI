@@ -215,8 +215,8 @@ func getHistoricalEvents() string {
 func executeLocalFunction(name string, args map[string]any) map[string]interface{} {
 	switch name {
 	case "get_historical_events":
-		events := getHistoricalEvents()
-		if len(events) == 0 {
+		event := getHistoricalEvents()
+		if event == "" {
 			return map[string]interface{}{
 				"success": false,
 				"message": "No events found for today",
@@ -224,8 +224,7 @@ func executeLocalFunction(name string, args map[string]any) map[string]interface
 		}
 		return map[string]interface{}{
 			"success": true,
-			"count":   len(events),
-			"events":  events,
+			"event":   event,
 		}
 	default:
 		return map[string]interface{}{"error": "Function not found"}
