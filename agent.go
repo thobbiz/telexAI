@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/joho/godotenv"
 	"google.golang.org/genai"
 )
 
@@ -24,9 +23,6 @@ type HistoricalEvent struct {
 }
 
 func getGeminiResponse(prompt string, history []*genai.Content) (*genai.GenerateContentResponse, *error) {
-	if err := godotenv.Load("./app.env"); err != nil {
-		log.Fatalf("Error loading .env file : %v", err)
-	}
 
 	geminiKey := os.Getenv("GEMINI_API_KEY")
 
@@ -123,10 +119,6 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 }
 
 func getHistoricalEvents() string {
-	if err := godotenv.Load("./app.env"); err != nil {
-		log.Fatalf("Error loading .env file : %v", err)
-	}
-
 	ninjasKey := os.Getenv("NINJAS_API_KEY")
 
 	month, day := getRandomMonthAndDay()
