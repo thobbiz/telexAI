@@ -1,0 +1,29 @@
+{
+  "name": "HistoryAgent",
+  "description": "An agent that give random historical facts",
+  "url": "https://your-agent-domain.com/api",
+  "version": "1.0.0",
+  "provider": {
+    "organization": "thobbiz",
+    "url": "https://www.github.com/thobbiz"
+  },
+  "documentationUrl": "https://your-agent-domain.com/docs",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["application/json", "text/plain"],
+  "skills": [
+    {
+      "id": "erig4w9292tb",
+      "name": "On This Day",
+      "description": "Responds with historical facts/events that happened on this day",
+      "inputModes": ["text/plain"],
+      "outputModes": ["text/plain"],
+      "examples": []
+    }
+  ],
+  "supportsAuthenticatedExtendedCard": false
+}
