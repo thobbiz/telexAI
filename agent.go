@@ -198,8 +198,8 @@ func getHistoricalEvents() string {
 	rand.NewSource(time.Now().UnixNano())
 	rand.Shuffle(len(events), func(i, j int) { events[i], events[j] = events[j], events[i] })
 
-	count := 5
-	if len(events) < 5 {
+	count := 1
+	if len(events) < 1 {
 		count = len(events)
 	}
 	selected := events[:count]
