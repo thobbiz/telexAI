@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -17,6 +18,8 @@ import (
 
 type HistoricalEvent struct {
 	Year  string `json:"year"`
+	Month string `json:"month"`
+	Day   string `json:"day"`
 	Event string `json:"event"`
 }
 
@@ -157,14 +160,14 @@ func getHistoricalEvents() string {
 		log.Fatalf("Error loading .env file : %v", err)
 	}
 
-	today := time.Now()
-	month := int(today.Month())
-	day := today.Day()
+	// today := time.Now()
+	// month := int(today.Month())
+	// day := today.Day()
 
 	ninjasKey := os.Getenv("NINJAS_API_KEY")
 
 	//	Format the url
-	url := fmt.Sprintf("https://api.api-ninjas.com/v1/historicalevents?month=%d&day=%d", month, day)
+	url := "https://api.api-ninjas.com/v1/historicalevents"
 
 	//Create a new request
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
@@ -198,13 +201,13 @@ func getHistoricalEvents() string {
 	rand.NewSource(time.Now().UnixNano())
 	randomIndex := rand.Intn(len(events))
 
-	selected := events[:randomIndex]
+	selected := events[randomIndex]
 
-	result := fmt.Sprintf("An Event that happened on %d/%d/2025(dd/mm/yy) in history\n", day, month)
+	day, _ := strconv.Atoi(selected.Day)
+	month, _ := strconv.Atoi(selected.Month)
+	year, _ := strconv.Atoi(selected.Year)
 
-	for _, e := range selected {
-		result += fmt.Sprintf("- In the year %s: %s\n", e.Year, e.Event)
-	}
+	result := fmt.Sprintf("On %d/%d/%d(dd/mm/yy) in history\n", day, month, year)
 
 	return result
 }
