@@ -115,6 +115,8 @@ func TaskHandler(ctx *gin.Context) {
 		},
 	}
 
+	fmt.Println(response)
+
 	ctx.JSON(http.StatusOK, response)
 }
 
