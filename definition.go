@@ -5,9 +5,6 @@ type Role string
 type TaskState string
 
 const (
-	RoleUser  Role = "user"
-	RoleAgent Role = "agent"
-
 	TaskSubmitted     TaskState = "submitted"
 	TaskWorking       TaskState = "working"
 	TaskInputRequired TaskState = "input-required"

@@ -43,8 +43,8 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 	dailyFactTools := &genai.Tool{
 		FunctionDeclarations: []*genai.FunctionDeclaration{
 			{
-				Name:        "get_historical_events",
-				Description: "Get historical events that happened on today's date in history",
+				Name:        "get_historical_event",
+				Description: "Get an historical events",
 				Parameters: &genai.Schema{
 					Type:       genai.TypeObject,
 					Properties: map[string]*genai.Schema{},
@@ -94,21 +94,24 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 	}
 
 	if hasFunctionCall && functionCall != nil {
-		if functionCall.Name == "get_historical_events" {
+		if functionCall.Name == "get_historical_event" {
 			result := getHistoricalEvents()
 
 			if result == "" {
 				result = "No historical events found for today"
 			}
 
-			functionResponsePart := genai.NewContentFromFunctionResponse(functionCall.Name, map[string]any{"result": result}, genai.Role(RoleUser)).Parts
+			functionResponsePart := genai.NewPartFromFunctionResponse(functionCall.Name, map[string]any{"result": result})
+			functionPartArray := []*genai.Part{
+				functionResponsePart,
+			}
 			contentArray = append(contentArray, response.Candidates[0].Content)
 			contentArray = append(contentArray, &genai.Content{
 				Role:  "user",
-				Parts: functionResponsePart,
+				Parts: functionPartArray,
 			})
 
-			finalResponse, err := client.Models.GenerateContent(ctx, "gemini-2.5-flash", contentArray, config)
+			finalResponse, err := chat.GenerateContent(ctx, "gemini-2.5-flash", contentArray, config)
 			if err != nil {
 				log.Fatal(err)
 				return nil, &err
@@ -119,55 +122,17 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 	return response, nil
 }
 
-// func getGeminiSummary(events []HistoricalEvent) *genai.GenerateContentResponse {
-// 	if err := godotenv.Load("./app.env"); err != nil {
-// 		log.Fatalf("Error loading .env file : %v", err)
-// 	}
-
-// 	geminiKey := os.Getenv("GEMINI_API_KEY")
-
-// 	// Set the key so genai can use it
-// 	os.Setenv("GEMINI_API_KEY", geminiKey)
-
-// 	ctx := context.Background()
-// 	client, err := genai.NewClient(ctx, nil)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		return nil
-// 	}
-
-// 	// Get today’s date
-
-// 	config := &genai.GenerateContentConfig{
-// 		SystemInstruction: genai.NewContentFromText("You are a history teacher. Your name is Anthonei. You give daily historical facts.", genai.RoleUser),
-// 	}
-
-// 	result, err := client.Models.GenerateContent(
-// 		ctx,
-// 		"gemini-2.5-flash",
-// 		genai.Text(prompt),
-// 		config,
-// 	)
-// 	if err != nil {
-// 		log.Fatalf("An error occured while generating the response: %v", err)
-// 	}
-
-// 	return result
-// }
-
 func getHistoricalEvents() string {
 	if err := godotenv.Load("./app.env"); err != nil {
 		log.Fatalf("Error loading .env file : %v", err)
 	}
 
-	// today := time.Now()
-	// month := int(today.Month())
-	// day := today.Day()
-
 	ninjasKey := os.Getenv("NINJAS_API_KEY")
 
+	month, day := getRandomMonthAndDay()
+
 	//	Format the url
-	url := "https://api.api-ninjas.com/v1/historicalevents"
+	url := fmt.Sprintf("https://api.api-ninjas.com/v1/historicalevents?month=%d&day=%d", month, day)
 
 	//Create a new request
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
@@ -178,6 +143,7 @@ func getHistoricalEvents() string {
 	if err != nil {
 		log.Fatalf("An error occured %v", err)
 	}
+	fmt.Println(response)
 	defer response.Body.Close()
 
 	// Get the request body
@@ -203,30 +169,29 @@ func getHistoricalEvents() string {
 
 	selected := events[randomIndex]
 
-	day, _ := strconv.Atoi(selected.Day)
-	month, _ := strconv.Atoi(selected.Month)
+	day, _ = strconv.Atoi(selected.Day)
+	month, _ = strconv.Atoi(selected.Month)
 	year, _ := strconv.Atoi(selected.Year)
 
-	result := fmt.Sprintf("On %d/%d/%d(dd/mm/yy) in history\n", day, month, year)
+	result := fmt.Sprintf("On %d/%d/%d(dd/mm/yy) in history: %s", day, month, year, selected.Event)
 
 	return result
 }
 
-func executeLocalFunction(name string, args map[string]any) map[string]interface{} {
-	switch name {
-	case "get_historical_events":
-		event := getHistoricalEvents()
-		if event == "" {
-			return map[string]interface{}{
-				"success": false,
-				"message": "No events found for today",
-			}
-		}
-		return map[string]interface{}{
-			"success": true,
-			"event":   event,
-		}
-	default:
-		return map[string]interface{}{"error": "Function not found"}
+func getRandomMonthAndDay() (int, int) {
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate random month (1-12)
+	month := rand.Intn(12) + 1
+
+	// Days in each month (non-leap year)
+	daysInMonth := map[int]int{
+		1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+		7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31,
 	}
+
+	// Generate random day based on the month
+	day := rand.Intn(daysInMonth[month]) + 1
+
+	return month, day
 }
