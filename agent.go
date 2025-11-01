@@ -195,16 +195,12 @@ func getHistoricalEvents() string {
 	}
 
 	// Randomly pick 5 unique events
-	rand.NewSource(time.Now().UnixNano())
-	rand.Shuffle(len(events), func(i, j int) { events[i], events[j] = events[j], events[i] })
+	rand.Seed(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(events))
 
-	count := 1
-	if len(events) < 1 {
-		count = len(events)
-	}
-	selected := events[:count]
+	selected := events[:randomIndex]
 
-	result := fmt.Sprintf("Events that happened on %d/%d/2025(dd/mm/yy) in history\n", day, month)
+	result := fmt.Sprintf("An Event that happened on %d/%d/2025(dd/mm/yy) in history\n", day, month)
 
 	for _, e := range selected {
 		result += fmt.Sprintf("- In the year %s: %s\n", e.Year, e.Event)
