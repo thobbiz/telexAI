@@ -195,7 +195,7 @@ func getHistoricalEvents() string {
 	}
 
 	// Randomly pick 5 unique events
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 	randomIndex := rand.Intn(len(events))
 
 	selected := events[:randomIndex]
