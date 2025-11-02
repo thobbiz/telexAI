@@ -54,47 +54,53 @@ func TaskHandler(ctx *gin.Context) {
 
 	// Get the last 20 messages
 	messages := req.Params.Message
-	if len(messages.Parts) < 2 {
-		jsonError := JsonRPCError{
-			Code:    -32603,
-			Message: "Invalid Request: missing required part",
-		}
-		errorResponse := A2AResponseError{
-			JsonRPC: "2.0",
-			Id:      req.Id,
-			Error:   jsonError,
-		}
-		ctx.JSON(http.StatusBadRequest, errorResponse)
-		return
-	}
 
-	// get the user's prompt
 	prompt := messages.Parts[0].Text
 
-	// convert them to gemini History
-	dataParts := messages.Parts[1].Data
-	var history []*genai.Content
-	for i, dp := range dataParts {
-		if i%2 == 1 {
-			history = append(history, genai.NewContentFromText(dp.Text, genai.RoleUser))
-		} else {
-			history = append(history, genai.NewContentFromText(dp.Text, genai.RoleModel))
-		}
-	}
+	var result *genai.GenerateContentResponse
+	var err *error
 
-	result, err := getGeminiResponse(prompt, history)
-	if err != nil || result == nil {
-		jsonError := JsonRPCError{
-			Code:    -32603,
-			Message: "Internal Error",
+	// convert them to gemini History
+	if len(messages.Parts) >= 2 {
+		dataParts := messages.Parts[1].Data
+		var history []*genai.Content
+		for i, dp := range dataParts {
+			if i%2 == 1 {
+				history = append(history, genai.NewContentFromText(dp.Text, genai.RoleUser))
+			} else {
+				history = append(history, genai.NewContentFromText(dp.Text, genai.RoleModel))
+			}
 		}
-		errorResponse := A2AResponseError{
-			JsonRPC: "2.0",
-			Id:      req.Id,
-			Error:   jsonError,
+
+		result, err = getGeminiResponse(prompt, history)
+		if err != nil || result == nil {
+			jsonError := JsonRPCError{
+				Code:    -32603,
+				Message: "Internal Error",
+			}
+			errorResponse := A2AResponseError{
+				JsonRPC: "2.0",
+				Id:      req.Id,
+				Error:   jsonError,
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
 		}
-		ctx.JSON(http.StatusBadRequest, errorResponse)
-		return
+	} else {
+		result, err = getGeminiResponse(prompt, nil)
+		if err != nil || result == nil {
+			jsonError := JsonRPCError{
+				Code:    -32603,
+				Message: "Internal Error",
+			}
+			errorResponse := A2AResponseError{
+				JsonRPC: "2.0",
+				Id:      req.Id,
+				Error:   jsonError,
+			}
+			ctx.JSON(http.StatusBadRequest, errorResponse)
+			return
+		}
 	}
 
 	parts := Part{
@@ -110,12 +116,10 @@ func TaskHandler(ctx *gin.Context) {
 		Result: Message{
 			Id:    uuid.New().String(),
 			Role:  "agent",
-			Kind:  "message",
 			Parts: partArray,
+			Kind:  "message",
 		},
 	}
-
-	fmt.Println(response)
 
 	ctx.JSON(http.StatusOK, response)
 }

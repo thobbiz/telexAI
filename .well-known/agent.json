@@ -1,7 +1,7 @@
 {
   "name": "HistoryAgent",
   "description": "An agent that give random historical facts",
-  "url": "https://your-agent-domain.com/api",
+  "url": "https://telexai-production.up.railway.app",
   "version": "1.0.0",
   "provider": {
     "organization": "thobbiz",
