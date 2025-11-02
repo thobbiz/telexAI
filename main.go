@@ -7,8 +7,6 @@ import (
 )
 
 func main() {
-	go sendDailyFacts()
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

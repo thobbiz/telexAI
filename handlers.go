@@ -1,18 +1,12 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/robfig/cron/v3"
 	"google.golang.org/genai"
 )
 
@@ -122,67 +116,4 @@ func TaskHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, response)
-}
-
-func sendDailyFacts() {
-	c := cron.New()
-
-	// Run every day at 7:00 AM
-	c.AddFunc("0 7 * * *", func() {
-		// Move ALL the logic INSIDE the cron function
-		result, err := getGeminiResponse("give me some history facts that happened today", nil)
-		if err != nil {
-			log.Printf("Error getting Gemini response: %v", err)
-			return
-		}
-
-		rand.NewSource(time.Now().UnixNano())
-		num := rand.Intn(20) + 1 //
-		strNum := strconv.Itoa(num)
-
-		resultKind := "text"
-		resultString := result.Text()
-		textPart := Part{
-			Kind: resultKind,
-			Text: resultString,
-		}
-		partList := []Part{textPart}
-
-		data := A2AResponseSuccess{
-			JsonRPC: "2.0",
-			Id:      strNum,
-			Result: Message{
-				Id:    "msg --1",
-				Role:  "agent",
-				Parts: partList,
-				Kind:  "message",
-			},
-		}
-
-		if err := makePostRequest("https://api.example.com/daily", data); err != nil {
-			log.Printf("Cron job error: %v", err)
-		} else {
-			log.Println("Daily facts sent successfully!")
-		}
-	})
-
-	c.Start()
-	log.Println("Daily facts scheduler started (runs at 9:00 AM)")
-}
-
-func makePostRequest(url string, payload interface{}) error {
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	log.Printf("POST to %s - Status: %s", url, resp.Status)
-	return nil
 }
