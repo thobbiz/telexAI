@@ -14,7 +14,7 @@ func main() {
 
 	r := gin.Default()
 
-	r.POST("/history_agent", TaskHandler)
+	r.POST("/history_agent", requestHandler)
 	r.Static("/.well-known", "./.well-known")
 
 	r.Run(":" + port)

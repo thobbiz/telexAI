@@ -207,7 +207,7 @@ func getHistoricalEvents() string {
 }
 
 func getRandomMonthAndDay() (int, int) {
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 
 	// Generate random month (1-12)
 	month := rand.Intn(12) + 1

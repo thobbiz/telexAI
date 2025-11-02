@@ -7,7 +7,7 @@
     "organization": "thobbiz",
     "url": "https://www.github.com/thobbiz"
   },
-  "documentationUrl": "https://your-agent-domain.com/docs",
+  "documentationUrl": "https://github.com/thobbiz/telexAI/blob/main/README.md",
   "capabilities": {
     "streaming": true,
     "pushNotifications": false,
@@ -19,7 +19,7 @@
     {
       "id": "erig4w9292tb",
       "name": "On This Day",
-      "description": "Responds with historical facts/events that happened on this day",
+      "description": "Responds with historical facts/events",
       "inputModes": ["text/plain"],
       "outputModes": ["text/plain"],
       "examples": []

@@ -10,12 +10,16 @@ import (
 	"google.golang.org/genai"
 )
 
-func TaskHandler(ctx *gin.Context) {
+// requesthandler handles incoming A2A (Agent-to-Agent) JSON-RPC requests.
+// It decodes the JSON payload, validates it, forwards the prompt to Gemini,
+// and returns a structured JSON-RPC response.
+func requestHandler(ctx *gin.Context) {
 	var req A2ARequest
 
-	//Decode the response into a taskRequest
+	// Decode the incoming JSON payload into an A2ARequest struct.
+	// If decoding fails, return a JSON-RPC compliant error response.
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		log.Print(errorResponse(err))
+		log.Print(errorResponse(err)) // Log the error for debugging
 
 		idStr := fmt.Sprintf("%v", req.Id)
 
@@ -32,9 +36,11 @@ func TaskHandler(ctx *gin.Context) {
 		return
 	}
 
+	// Validate that the JSON-RPC version is correct.
+	// According to spec, it must be exactly "2.0".
 	if req.JsonRPC != "2.0" {
 		jsonError := JsonRPCError{
-			Code:    -32600,
+			Code:    -32600, // JSON-RPC invalid request error code
 			Message: "Invalid Request: jsonrpc must be \"2.0\" and id is required",
 		}
 		errorResponse := A2AResponseError{
@@ -46,30 +52,37 @@ func TaskHandler(ctx *gin.Context) {
 		return
 	}
 
-	// Get the last 20 messages
+	// Extract the last 20 messages from the request.
 	messages := req.Params.Message
 
+	// The first message part usually contains the system prompt or user query.
 	prompt := messages.Parts[0].Text
 
 	var result *genai.GenerateContentResponse
 	var err *error
 
-	// convert them to gemini History
+	// If the request contains conversation history, convert it into Gemini format.
 	if len(messages.Parts) >= 2 {
 		dataParts := messages.Parts[1].Data
 		var history []*genai.Content
+
+		// Iterate over message data parts and alternate between user and model roles.
 		for i, dp := range dataParts {
 			if i%2 == 1 {
+				// Odd index: user message
 				history = append(history, genai.NewContentFromText(dp.Text, genai.RoleUser))
 			} else {
+				// Even index: model (AI) message
 				history = append(history, genai.NewContentFromText(dp.Text, genai.RoleModel))
 			}
 		}
 
+		// Send the prompt and history to Gemini to generate a new response.
 		result, err = getGeminiResponse(prompt, history)
 		if err != nil || result == nil {
+			// If Gemini fails or returns nothing, send an internal error.
 			jsonError := JsonRPCError{
-				Code:    -32603,
+				Code:    -32603, // JSON-RPC internal error
 				Message: "Internal Error",
 			}
 			errorResponse := A2AResponseError{
@@ -80,7 +93,9 @@ func TaskHandler(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, errorResponse)
 			return
 		}
+
 	} else {
+		// No conversation history — just send the prompt directly.
 		result, err = getGeminiResponse(prompt, nil)
 		if err != nil || result == nil {
 			jsonError := JsonRPCError{
@@ -97,6 +112,7 @@ func TaskHandler(ctx *gin.Context) {
 		}
 	}
 
+	// Build the response "Part" object — Gemini’s text result is wrapped in one part.
 	parts := Part{
 		Kind: "text",
 		Text: result.Text(),
@@ -104,16 +120,19 @@ func TaskHandler(ctx *gin.Context) {
 
 	partArray := []Part{parts}
 
+	// Construct the successful JSON-RPC response.
+	// It includes the generated message from the AI agent.
 	response := A2AResponseSuccess{
 		JsonRPC: "2.0",
 		Id:      req.Id,
 		Result: Message{
-			Id:    uuid.New().String(),
-			Role:  "agent",
-			Parts: partArray,
-			Kind:  "message",
+			Id:    uuid.New().String(), // Generate a unique message ID
+			Role:  "agent",             // Mark this as an agent (AI) message
+			Parts: partArray,           // Include the AI-generated content
+			Kind:  "message",           // Specify the message kind
 		},
 	}
 
+	// Send the successful response with HTTP 200 OK.
 	ctx.JSON(http.StatusOK, response)
 }
