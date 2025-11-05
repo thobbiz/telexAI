@@ -15,7 +15,7 @@ type A2ARequest struct {
 type A2AResponseSuccess struct {
 	JsonRPC string   `json:"jsonrpc"`
 	Id      any      `json:"id"`
-	Result  Messages `json:"result"`
+	Result  Message `json:"result"`
 }
 
 // A2AResponseError is a JSON-RPC error response.
