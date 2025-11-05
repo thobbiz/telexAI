@@ -24,11 +24,8 @@ type HistoricalEvent struct {
 }
 
 func getGeminiResponse(prompt string, history []*genai.Content) (*genai.GenerateContentResponse, *error) {
-	// Load the app.env
-	if err := godotenv.Load("./app.env"); err != nil {
-		log.Fatalf("Error loading .env file : %v", err)
+	_ = godotenv.Load("app.env")
 
-	}
 	geminiKey := os.Getenv("GEMINI_API_KEY")
 
 	// Set the key so genai can use it
@@ -42,7 +39,7 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 	}
 
 	// Make a tool that can use a local function to get historical events
-	dailyFactTools := &genai.Tool{
+	historyFactTools := &genai.Tool{
 		FunctionDeclarations: []*genai.FunctionDeclaration{
 			{
 				Name:        "get_historical_event",
@@ -56,8 +53,8 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 		},
 	}
 
-	// Create an array of genai tool and add the dailyfactstool variable to it
-	tools := []*genai.Tool{dailyFactTools}
+	// Create an array of genai tool and add the historyfactstool variable to it
+	tools := []*genai.Tool{historyFactTools}
 
 	// Create a promptPart variable from prompt String
 	promptPart := genai.Part{Text: prompt}
@@ -151,10 +148,7 @@ func getGeminiResponse(prompt string, history []*genai.Content) (*genai.Generate
 }
 
 func getHistoricalEvents() string {
-	if err := godotenv.Load("./app.env"); err != nil {
-		log.Fatalf("Error loading .env file : %v", err)
-
-	}
+	_ = godotenv.Load("app.env")
 	ninjasKey := os.Getenv("NINJAS_API_KEY")
 
 	month, day := getRandomMonthAndDay()

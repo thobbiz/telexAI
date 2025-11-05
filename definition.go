@@ -13,9 +13,9 @@ type A2ARequest struct {
 
 // A2AResponseSuccess is a successful JSON-RPC response.
 type A2AResponseSuccess struct {
-	JsonRPC string  `json:"jsonrpc"`
-	Id      any     `json:"id"`
-	Result  Message `json:"result"`
+	JsonRPC string `json:"jsonrpc"`
+	Id      any    `json:"id"`
+	Result  Result `json:"result"`
 }
 
 // A2AResponseError is a JSON-RPC error response.
@@ -23,6 +23,27 @@ type A2AResponseError struct {
 	JsonRPC string       `json:"jsonrpc"`
 	Id      any          `json:"id"`
 	Error   JsonRPCError `json:"error"`
+}
+
+type Result struct {
+	Id        any         `json:"id"`
+	ContextId any         `json:"contextId"`
+	Status    Status      `json:"status"`
+	Artifacts []Artifact  `json:"artifacts"`
+	History   interface{} `json:"history"`
+	Kind      string      `json:"kind"`
+}
+
+type Status struct {
+	State     string  `json:"state"`
+	TimeStamp string  `json:"timestamp"`
+	Message   Message `json:"message"`
+}
+
+type Artifact struct {
+	ArtifactId string             `json:"artifactId"`
+	Name       string             `json:"name"`
+	Parts      []ArtifactDataPart `json:"parts"`
 }
 
 // Message represents a message between a user and agent.
@@ -37,6 +58,11 @@ type Message struct {
 type DataPart struct {
 	Kind string `json:"kind"`
 	Text string `json:"text"`
+}
+
+type ArtifactDataPart struct {
+	Kind string `json:"kind"`
+	Data any    `json:"data"`
 }
 
 // Part represents a message component (text or structured data).

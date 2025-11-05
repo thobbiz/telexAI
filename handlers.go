@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -60,11 +61,11 @@ func requestHandler(ctx *gin.Context) {
 
 	var result *genai.GenerateContentResponse
 	var err *error
+	var history []*genai.Content
 
 	// If the request contains conversation history, convert it into Gemini format.
 	if len(messages.Parts) >= 2 {
 		dataParts := messages.Parts[1].Data
-		var history []*genai.Content
 
 		// Iterate over message data parts and alternate between user and model roles.
 		for i, dp := range dataParts {
@@ -125,11 +126,33 @@ func requestHandler(ctx *gin.Context) {
 	response := A2AResponseSuccess{
 		JsonRPC: "2.0",
 		Id:      req.Id,
-		Result: Message{
-			Id:    uuid.New().String(), // Generate a unique message ID
-			Role:  "agent",             // Mark this as an agent (AI) message
-			Parts: partArray,           // Include the AI-generated content
-			Kind:  "message",           // Specify the message kind
+		Result: Result{
+			Id:        "task-001",
+			ContextId: "ctx--uuid",
+			Status: Status{
+				State:     "completed",
+				TimeStamp: time.Now().UTC().Format(time.RFC3339Nano),
+				Message: Message{
+					Id:    uuid.New().String(), // Generate a unique message ID
+					Role:  "agent",             // Mark this as an agent (AI) message
+					Parts: partArray,           // Include the AI-generated content
+					Kind:  "message",           // Specify the message kind
+				},
+			},
+			Artifacts: []Artifact{
+				Artifact{
+					ArtifactId: "artifact-uuid",
+					Name:       "historyData",
+					Parts: []ArtifactDataPart{
+						ArtifactDataPart{
+							Kind: "data",
+							Data: result,
+						},
+					},
+				},
+			},
+			History: history,
+			Kind:    "task",
 		},
 	}
 
