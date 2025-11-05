@@ -13,9 +13,9 @@ type A2ARequest struct {
 
 // A2AResponseSuccess is a successful JSON-RPC response.
 type A2AResponseSuccess struct {
-	JsonRPC string `json:"jsonrpc"`
-	Id      any    `json:"id"`
-	Result  Result `json:"result"`
+	JsonRPC string   `json:"jsonrpc"`
+	Id      any      `json:"id"`
+	Result  Messages `json:"result"`
 }
 
 // A2AResponseError is a JSON-RPC error response.
@@ -26,12 +26,12 @@ type A2AResponseError struct {
 }
 
 type Result struct {
-	Id        any         `json:"id"`
-	ContextId any         `json:"contextId"`
-	Status    Status      `json:"status"`
-	Artifacts []Artifact  `json:"artifacts"`
-	History   interface{} `json:"history"`
-	Kind      string      `json:"kind"`
+	Id        any        `json:"id"`
+	ContextId any        `json:"contextId"`
+	Status    Status     `json:"status"`
+	Artifacts []Artifact `json:"artifacts"`
+	History   any        `json:"history"`
+	Kind      string     `json:"kind"`
 }
 
 type Status struct {
