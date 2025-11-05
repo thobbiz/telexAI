@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -125,35 +126,33 @@ func requestHandler(ctx *gin.Context) {
 	response := A2AResponseSuccess{
 		JsonRPC: "2.0",
 		Id:      req.Id,
-		Result:
-		// Result{
-		// Id:        "task-001",
-		// ContextId: "ctx--uuid",
-		// Status: Status{
-		// 	State:     "completed",
-		// 	TimeStamp: time.Now().UTC().Format(time.RFC3339Nano),
-		// Message:
-		Message{
-			Id:    uuid.New().String(), // Generate a unique message ID
-			Role:  "agent",             // Mark this as an agent (AI) message
-			Parts: partArray,           // Include the AI-generated content
-			Kind:  "message",           // Specify the message kind
-			// 	},
-			// },
-			// Artifacts: []Artifact{
-			// 	Artifact{
-			// 		ArtifactId: "artifact-uuid",
-			// 		Name:       "historyData",
-			// 		Parts: []ArtifactDataPart{
-			// 			ArtifactDataPart{
-			// 				Kind: "data",
-			// 				Data: result,
-			// 			},
-			// 		},
-			// 	},
-			// },
-			// History: history,
-			// Kind:    "task",
+		Result: Result{
+			Id:        "task-001",
+			ContextId: "ctx--uuid",
+			Status: Status{
+				State:     "completed",
+				TimeStamp: time.Now().UTC().Format(time.RFC3339Nano),
+				Message: Message{
+					Id:    uuid.New().String(), // Generate a unique message ID
+					Role:  "agent",             // Mark this as an agent (AI) message
+					Parts: partArray,           // Include the AI-generated content
+					Kind:  "message",           // Specify the message kind
+				},
+			},
+			Artifacts: []Artifact{
+				Artifact{
+					ArtifactId: "artifact-uuid",
+					Name:       "historyData",
+					Parts: []ArtifactDataPart{
+						ArtifactDataPart{
+							Kind: "data",
+							Data: result,
+						},
+					},
+				},
+			},
+			History: history,
+			Kind:    "task",
 		},
 	}
 
